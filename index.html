@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Georgics 1.231–251 — Translation Helper</title>
+<style>
+:root{
+  --rust:#8C3A2B; --slate:#2E4756; --cream:#FBF7F2; --pale:#F3F7F9;
+  --ink:#1f2328; --mute:#5c6670; --line:#d9d3c7;
+  --green:#2f7d4f; --greenbg:#e8f4ec; --red:#a33a2a; --redbg:#fbeae6;
+  --purple:#5b3d8a; --purplebg:#f1ecf8; --gold:#b98a2b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--cream);color:var(--ink);font:16px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+.lat{font-family:Cambria,"Palatino Linotype",Georgia,serif}
+header{position:sticky;top:0;z-index:30;background:var(--slate);color:#fff;padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+header h1{font-size:18px;margin:0;font-weight:600;letter-spacing:.2px}
+header h1 small{display:block;font-weight:400;font-size:12.5px;opacity:.85;margin-top:2px}
+.modes{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
+.modes .lbl{opacity:.85}
+.seg{display:inline-flex;background:rgba(255,255,255,.12);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:#fff;padding:6px 12px;border-radius:999px;font-size:13px;cursor:pointer;opacity:.85}
+.seg button.on{background:#fff;color:var(--slate);opacity:1;font-weight:600}
+main{max-width:920px;margin:0 auto;padding:18px 16px 80px}
+
+/* index */
+.intro{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:14.5px}
+.intro p{margin:6px 0}
+.idx{display:flex;flex-direction:column;gap:8px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;display:grid;grid-template-columns:70px 1fr auto;gap:12px;align-items:center;transition:border-color .15s,transform .1s}
+.card:hover{border-color:var(--rust);transform:translateY(-1px)}
+.card .ln{color:var(--rust);font-weight:700;font-size:13px}
+.card .tx{font-size:16px;color:var(--ink)}
+.card .st{font-size:12px;color:var(--mute);white-space:nowrap}
+.card .st.done{color:var(--green);font-weight:600}
+.card .st.part{color:var(--gold);font-weight:600}
+.card .tag{display:inline-block;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--mute);margin-top:3px}
+
+/* sentence view */
+.sticky{position:sticky;top:var(--hh,60px);z-index:20;background:var(--cream);padding:10px 0 8px;border-bottom:2px solid var(--line);margin-bottom:14px}
+.bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;color:var(--mute)}
+.bar button{background:#fff;border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:13px;color:var(--slate)}
+.bar button:hover{border-color:var(--slate)}
+.sent{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.vline{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px;padding:3px 0}
+.vline .no{width:34px;font-size:11px;color:var(--mute);flex:none;font-family:inherit}
+.chip{display:inline-block;padding:2px 6px;border-radius:7px;border:1px solid transparent;cursor:pointer;font-size:20px;line-height:1.35;user-select:none;transition:background .12s}
+.chip:hover{background:var(--pale);border-color:#c9d4dc}
+.chip.hi{background:#fff4d6;border-color:var(--gold)}
+.chip.verb{background:var(--greenbg);border-color:var(--green);color:var(--green);font-weight:700}
+.chip.subj{background:#e6eef7;border-color:var(--slate);color:var(--slate);font-weight:700}
+.chip.no{background:var(--redbg);border-color:#e3b3aa;color:var(--red)}
+.hint{font-size:12.5px;color:var(--mute);margin-top:6px}
+
+/* steps */
+.step{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px;position:relative}
+.step.locked{opacity:.5;pointer-events:none;filter:grayscale(.4)}
+.step h2{margin:0 0 6px;font-size:15px;color:var(--slate);display:flex;align-items:center;gap:10px}
+.step h2 .n{background:var(--slate);color:#fff;border-radius:999px;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12.5px;flex:none}
+.step.done h2 .n{background:var(--green)}
+.step p{margin:6px 0;font-size:14.5px}
+.fb{margin-top:10px;padding:10px 12px;border-radius:9px;font-size:14px;display:none}
+.fb.ok{display:block;background:var(--greenbg);border-left:4px solid var(--green)}
+.fb.bad{display:block;background:var(--redbg);border-left:4px solid var(--red)}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 13px;cursor:pointer;font-size:13.5px;color:var(--slate);margin-top:6px}
+.btn:hover{border-color:var(--slate)}
+.btn.primary{background:var(--slate);color:#fff;border-color:var(--slate)}
+.btn.primary:hover{background:#243a48}
+.btn[disabled]{opacity:.45;cursor:default}
+.btn.small{padding:4px 10px;font-size:12.5px;margin-top:0}
+.chunks{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.chunk{display:grid;grid-template-columns:minmax(150px,1fr) 1.3fr;gap:6px 14px;padding:8px 12px;border-radius:9px;background:var(--pale);border-left:3px solid var(--slate);animation:pop .25s ease}
+.chunk .cl{font-size:17px}
+.chunk .ce{font-size:14.5px}
+.chunk .cn{grid-column:1/-1;font-size:12.5px;color:var(--mute)}
+@keyframes pop{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.model{margin-top:10px;background:var(--purplebg);border-left:4px solid var(--purple);padding:12px 14px;border-radius:9px;font-size:15px;display:none}
+.model.show{display:block}
+.model .shape{font-size:13.5px;color:#3d2d5c;margin-top:8px;padding-top:8px;border-top:1px dashed #c8bde0}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:16px}
+.spacer{height:40vh}
+
+/* popover */
+#pop{position:fixed;z-index:50;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.14);padding:12px 14px;max-width:360px;min-width:220px;font-size:14px;display:none}
+#pop.show{display:block}
+#pop .w{font-size:20px;color:var(--rust);margin-bottom:2px}
+#pop .lem{font-style:italic;color:var(--slate);font-size:14px}
+#pop .row{margin-top:6px}
+#pop .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--mute);display:block}
+#pop .warn{background:#fff4d6;border-left:3px solid var(--gold);padding:5px 8px;border-radius:6px;font-size:13px;margin-top:6px}
+#pop .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+#pop .acts .btn{margin-top:0;padding:6px 10px;font-size:13px}
+#pop .x{position:absolute;top:6px;right:8px;border:0;background:transparent;font-size:18px;color:var(--mute);cursor:pointer}
+#pop .ety{font-size:14px}
+#pop .ety .lang{color:var(--mute);font-size:12.5px;display:block;margin-top:3px}
+#pop .off{color:var(--mute);font-size:13px}
+#pop .amb{background:#fff4d6;border-radius:4px;padding:0 3px}
+@media (max-width:600px){
+  .chip{font-size:18px}
+  .card{grid-template-columns:56px 1fr;grid-auto-rows:auto}
+  .card .st{grid-column:1/-1}
+  #pop{left:8px!important;right:8px;max-width:none;bottom:8px;top:auto!important}
+  .chunk{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Georgics 1.231–251 <small>Stuck on a sentence? Pick it from the list and work through it the way we do in lessons.</small></h1>
+  <div class="modes">
+    <span class="lbl">Word help:</span>
+    <div class="seg" id="modeSeg">
+      <button data-m="off" class="on">Off</button>
+      <button data-m="mean">Meaning</button>
+      <button data-m="parse">Parse</button>
+      <button data-m="ety">Etymology</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="viewIndex"></div>
+  <div id="viewSent" style="display:none"></div>
+</main>
+
+<div id="pop"></div>
+
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const TEXT = {
+231:"Idcirco certis dimensum partibus orbem",
+232:"per duodena regit mundi sol aureus astra.",
+233:"quinque tenent caelum zonae: quarum una corusco",
+234:"semper sole rubens et torrida semper ab igni;",
+235:"quam circum extremae dextra laevaque trahuntur",
+236:"caeruleae, glacie concretae atque imbribus atris;",
+237:"has inter mediamque duae mortalibus aegris",
+238:"munere concessae divum, et via secta per ambas,",
+239:"obliquus qua se signorum verteret ordo.",
+240:"mundus, ut ad Scythiam Riphaeasque arduus arces",
+241:"consurgit, premitur Libyae devexus in Austros.",
+242:"hic vertex nobis semper sublimis; at illum",
+243:"sub pedibus Styx atra videt Manesque profundi.",
+244:"maximus hic flexu sinuoso elabitur Anguis",
+245:"circum perque duas in morem fluminis Arctos,",
+246:"Arctos Oceani metuentis aequore tingi.",
+247:"illic, ut perhibent, aut intempesta silet nox",
+248:"semper et obtenta densentur nocte tenebrae;",
+249:"aut redit a nobis Aurora diemque reducit,",
+250:"nosque ubi primus equis Oriens adflavit anhelis",
+251:"illic sera rubens accendit lumina Vesper."
+};
+
+/* Each sentence: lines = [[lineNo, "text"], ...] — a line may be partial.
+   verb: accepted main-verb forms (lower-case, no punctuation); none:true = verbless.
+   vno: specific feedback for tempting wrong picks. subj / sno likewise.
+   chunks: construe order. model: translation. shape: note. */
+const SENT = [
+{ id:"s1", ref:"231–232", lines:[[231,TEXT[231]],[232,TEXT[232]]],
+  verb:["regit"], vwhy:"<b>regit</b> — 3rd person singular, present indicative: <i>rules</i>. It is the only finite verb here, and everything else hangs from it.",
+  vno:{ dimensum:"<b>dimensum</b> is a perfect participle (<i>measured out</i>). It describes <i>orbem</i>; it has no person ending, so it cannot be the main verb."},
+  subj:["sol"], swhy:"<b>sol</b> (nominative singular, masculine) — <i>the sun</i>. <b>aureus</b> agrees with it: <i>the golden sun</i>.",
+  sno:{ aureus:"<b>aureus</b> describes the subject — it is the adjective <i>golden</i>. Find the noun it agrees with.", orbem:"<b>orbem</b> is accusative — it is the object of <i>regit</i>, the thing being ruled.", astra:"<b>astra</b> is accusative plural after <i>per</i>: <i>through the … stars</i>. Not the subject.", mundi:"<b>mundi</b> is genitive — <i>of the heaven</i>. Genitives are never subjects."},
+  chunks:[
+    {l:"Idcirco",e:"For that reason",n:"Looks back to the lines before: because the sun's course marks out the seasons."},
+    {l:"sol aureus",e:"the golden sun",n:"Subject."},
+    {l:"regit",e:"rules / steers",n:"Main verb."},
+    {l:"orbem … dimensum certis partibus",e:"the sphere, measured out in fixed parts",n:"Object + participle agreeing with it. <i>certis partibus</i>: ablative — <i>in/into fixed parts</i>."},
+    {l:"per duodena … astra mundi",e:"through the twelve constellations of the heaven",n:"<i>per</i> + accusative; <i>mundi</i> genitive with <i>astra</i>. <i>mundus</i> here = the sky, not the earth."}
+  ],
+  model:"For that reason the golden sun rules the sphere, measured out in fixed parts, through the twelve constellations of the heaven.",
+  shape:"Object first (<i>orbem</i>), verb in the middle, subject late (<i>sol aureus</i>), and the noun <i>astra</i> pushed to the very end away from its preposition <i>per</i>. Classic Virgilian word order: find the verb, then the nominative, then pair up the separated words."
+},
+{ id:"s2", ref:"233a", lines:[[233,"quinque tenent caelum zonae:"]],
+  verb:["tenent"], vwhy:"<b>tenent</b> — 3rd person plural, present: <i>(they) hold</i>. The plural ending tells you to look for a plural subject.",
+  vno:{},
+  subj:["zonae"], swhy:"<b>zonae</b> — nominative plural: <i>zones</i>. It matches the plural verb <i>tenent</i>. <b>quinque</b> (<i>five</i>) goes with it.",
+  sno:{ caelum:"<b>caelum</b> is accusative here — the sky is what is held. Which word is nominative plural to match <i>tenent</i>?", quinque:"<b>quinque</b> is the number <i>five</i> — it counts the subject but is not the noun itself."},
+  chunks:[
+    {l:"quinque … zonae",e:"five zones",n:"Subject, split around the verb."},
+    {l:"tenent",e:"hold / occupy",n:""},
+    {l:"caelum",e:"the sky",n:"Object."}
+  ],
+  model:"Five zones hold the sky:",
+  shape:"A short statement that announces the topic of the next fifteen lines. The colon means what follows will explain the five zones one by one."
+},
+{ id:"s3", ref:"233b–234", lines:[[233,"quarum una corusco"],[234,TEXT[234]]],
+  verb:[], none:true, noneLabel:"There is no finite verb — <i>est</i> is understood",
+  vwhy:"Correct. There is no finite verb: <i>est</i> is left out, as Latin often does with a descriptive sentence. <i>rubens</i> and <i>torrida</i> describe the subject; <i>rubens</i> is a participle, <i>torrida</i> an adjective.",
+  vno:{ rubens:"<b>rubens</b> is a present participle (<i>glowing red</i>) — a verb form, but with no person ending. It cannot be the main verb.", torrida:"<b>torrida</b> is an adjective (<i>scorched</i>). Is there any word with a person ending at all?"},
+  subj:["una"], swhy:"<b>una</b> — nominative singular feminine: <i>one (zone)</i>. <i>quarum</i> = <i>of which (zones)</i>; so: <i>one of these</i>.",
+  sno:{ quarum:"<b>quarum</b> is genitive plural — <i>of which</i>. It links back to the zones but is not the subject.", sole:"<b>sole</b> is ablative — <i>with/from the sun</i>. Look for the nominative."},
+  chunks:[
+    {l:"quarum una",e:"of these, one",n:"<i>quarum</i> is a 'connecting relative' — translate as <i>of these</i>."},
+    {l:"[est]",e:"is",n:"Supply the verb."},
+    {l:"semper rubens corusco sole",e:"always red with the flashing sun",n:"<i>corusco sole</i>: ablative of cause."},
+    {l:"et semper torrida ab igni",e:"and always scorched by (its) fire",n:"<i>ab igni</i>: ablative after <i>ab</i>. Note the repetition of <i>semper</i>."}
+  ],
+  model:"of these, one is always red with the flashing sun and always scorched by its fire;",
+  shape:"The torrid zone. Two balanced halves (<i>semper … semper</i>), each ending in the heat: <i>sole</i> … <i>igni</i>."
+},
+{ id:"s4", ref:"235–236", lines:[[235,TEXT[235]],[236,TEXT[236]]],
+  verb:["trahuntur"], vwhy:"<b>trahuntur</b> — 3rd person plural, present <b>passive</b>: <i>are drawn / stretched</i>. Passive, so the subject is the thing being stretched.",
+  vno:{ concretae:"<b>concretae</b> is a perfect participle (<i>frozen solid</i>) describing the zones. No person ending — not the main verb."},
+  subj:["extremae","caeruleae"], swhy:"<b>extremae</b> (with <b>caeruleae</b>) — nominative plural feminine: <i>the outermost (zones), dark-blue</i>. The noun <i>zonae</i> is understood from 233.",
+  sno:{ quam:"<b>quam</b> is accusative — it is governed by <i>circum</i>, which comes after it (<i>around which</i>).", glacie:"<b>glacie</b> is ablative — <i>with ice</i>.", dextra:"<b>dextra</b> is ablative — <i>on the right</i>. Find the nominative plural to match <i>trahuntur</i>."},
+  chunks:[
+    {l:"quam circum",e:"around which (one)",n:"The preposition comes <i>after</i> its noun (anastrophe). <i>quam</i> refers back to the torrid zone."},
+    {l:"extremae … caeruleae",e:"the outermost (zones), dark-blue,",n:"Subject; supply <i>zonae</i>."},
+    {l:"trahuntur",e:"are stretched",n:"Main verb, passive."},
+    {l:"dextra laevaque",e:"on the right and on the left",n:"Ablatives of place."},
+    {l:"concretae glacie atque imbribus atris",e:"frozen solid with ice and black rainstorms",n:"Participle agreeing with the subject; <i>glacie</i> and <i>imbribus atris</i> are ablatives of means."}
+  ],
+  model:"around this one the outermost zones, dark-blue, are stretched to right and left, frozen solid with ice and black rainstorms;",
+  shape:"The two frozen zones. Note the postponed prepositions in this passage (<i>quam circum</i>, then <i>has inter</i> in 237) — expect the noun before the preposition."
+},
+{ id:"s5", ref:"237–239", lines:[[237,TEXT[237]],[238,TEXT[238]],[239,TEXT[239]]],
+  verb:[], none:true, noneLabel:"No finite verb in the main clause — <i>sunt</i> / <i>est</i> understood",
+  vwhy:"Correct. The main clause has no finite verb: <i>duae … concessae [sunt]</i> and <i>via secta [est]</i>. The only finite verb, <i>verteret</i>, is inside the <i>qua</i>-clause, so it cannot be the main verb.",
+  vno:{ verteret:"<b>verteret</b> is finite, but it is imperfect <b>subjunctive</b> and belongs to the <i>qua</i>-clause (<i>along which … might turn</i>). It is subordinate, not the main verb.", concessae:"<b>concessae</b> is a perfect participle (<i>granted</i>). With <i>sunt</i> understood it forms the verb of the main clause — so what is the finite verb?", secta:"<b>secta</b> is a perfect participle (<i>cut</i>) with <i>est</i> understood. No finite verb is written."},
+  subj:["duae"], swhy:"<b>duae</b> — nominative plural feminine: <i>two (zones)</i>. <i>concessae</i> agrees with it. The second clause has its own subject, <i>via</i>.",
+  sno:{ via:"<b>via</b> is the subject of the second clause (<i>via secta [est]</i>). For the first clause, find the nominative that <i>concessae</i> agrees with.", ordo:"<b>ordo</b> is the subject of <i>verteret</i>, inside the subordinate clause.", has:"<b>has</b> is accusative — governed by <i>inter</i>, which follows it.", mediamque:"<b>mediam</b> is accusative, also governed by <i>inter</i>: <i>between these and the middle one</i>.", mortalibus:"<b>mortalibus</b> is dative — <i>to mortals</i>. The zones were granted <i>to</i> them.", divum:"<b>divum</b> is genitive plural (short for <i>divorum</i>): <i>of the gods</i>. Not an accusative singular."},
+  chunks:[
+    {l:"has inter mediamque",e:"between these and the middle one",n:"<i>inter</i> comes after <i>has</i>; it governs both <i>has</i> and <i>mediam</i>."},
+    {l:"duae",e:"two (zones)",n:"Subject."},
+    {l:"concessae [sunt]",e:"have been granted",n:"Participle + understood <i>sunt</i>."},
+    {l:"mortalibus aegris",e:"to suffering mortals",n:"Dative (the form looks like an ablative; the sense — <i>granted to</i> — makes it dative)."},
+    {l:"munere divum",e:"by the gift of the gods",n:"Ablative + genitive plural. <i>divum</i> = <i>divorum</i>."},
+    {l:"et via secta [est] per ambas",e:"and a path has been cut through both",n:"Second clause. The 'path' is the ecliptic."},
+    {l:"qua … ordo obliquus signorum",e:"along which the slanting order of the signs",n:"<i>qua</i> = <i>along which</i>; <i>ordo</i> is the subject of the clause."},
+    {l:"se verteret",e:"might turn (itself)",n:"Imperfect subjunctive: purpose (<i>so that along it … might turn</i>)."}
+  ],
+  model:"between these and the middle one, two zones have been granted to suffering mortals by the gift of the gods, and a path has been cut through both, along which the slanting order of the signs might turn.",
+  shape:"The two temperate zones. Two verbless main clauses (<i>sunt</i>, <i>est</i> understood) and then a purpose clause. The trap is <i>verteret</i>: finite, but subjunctive and subordinate."
+},
+{ id:"s6", ref:"240–241", lines:[[240,TEXT[240]],[241,TEXT[241]]],
+  verb:["premitur"], vwhy:"<b>premitur</b> — 3rd person singular, present <b>passive</b>: <i>is pressed down</i>. <i>consurgit</i> is also finite, but it sits inside the <i>ut</i>-clause.",
+  vno:{ consurgit:"<b>consurgit</b> is finite, but it is the verb of the <i>ut</i>-clause: <i>ut … consurgit</i> = <i>as it rises</i>. Look for the verb of the main clause."},
+  subj:["mundus"], swhy:"<b>mundus</b> — nominative singular masculine: <i>the sky / the heavens</i>. It is the subject of both <i>consurgit</i> and <i>premitur</i>; <i>arduus</i> and <i>devexus</i> both agree with it.",
+  sno:{ arduus:"<b>arduus</b> is an adjective agreeing with the subject (<i>steep</i>). Find the noun.", devexus:"<b>devexus</b> is an adjective agreeing with the subject (<i>sloping down</i>). Find the noun.", arces:"<b>arces</b> is accusative plural after <i>ad</i>: <i>to the heights</i>.", libyae:"<b>Libyae</b> is genitive — <i>of Libya</i>, going with <i>Austros</i>."},
+  chunks:[
+    {l:"mundus",e:"the sky",n:"Subject of the whole sentence."},
+    {l:"ut … arduus consurgit",e:"as it rises steep",n:"<i>ut</i> + indicative = <i>as</i>. <i>arduus</i> is predicative: <i>rises (and is) steep</i>."},
+    {l:"ad Scythiam Riphaeasque arces",e:"towards Scythia and the Rhipaean heights",n:"The far north."},
+    {l:"premitur devexus",e:"(so) it is pressed down, sloping,",n:"Main verb + predicative adjective."},
+    {l:"in Austros Libyae",e:"towards the south winds of Libya",n:"i.e. towards the far south."}
+  ],
+  model:"The sky, as it rises steep towards Scythia and the Rhipaean heights, is pressed down, sloping, towards the south winds of Libya.",
+  shape:"A balanced 'as … so' picture of the tilted sky: north (<i>Scythiam</i>) high, south (<i>Austros</i>) low. <i>arduus</i> and <i>devexus</i> mirror each other."
+},
+{ id:"s7", ref:"242a", lines:[[242,"hic vertex nobis semper sublimis;"]],
+  verb:[], none:true, noneLabel:"There is no finite verb — <i>est</i> is understood",
+  vwhy:"Correct. <i>est</i> is understood: <i>this pole is always high above us</i>.",
+  vno:{ sublimis:"<b>sublimis</b> is an adjective (<i>high, aloft</i>) agreeing with <i>vertex</i>. No verb is written."},
+  subj:["vertex"], swhy:"<b>vertex</b> — nominative singular masculine: <i>pole</i> (the celestial pole). <i>hic</i> = <i>this</i> agrees with it.",
+  sno:{ hic:"<b>hic</b> here is the demonstrative <i>this</i>, agreeing with the subject. Find the noun.", nobis:"<b>nobis</b> is dative — <i>for us</i>."},
+  chunks:[
+    {l:"hic vertex",e:"this pole",n:"The north celestial pole."},
+    {l:"nobis",e:"for us",n:"Dative of reference — from our point of view."},
+    {l:"semper sublimis [est]",e:"is always high above",n:"Supply <i>est</i>."}
+  ],
+  model:"This pole is always high above us;",
+  shape:"Short and verbless — set against the longer <i>at illum …</i> clause that follows."
+},
+{ id:"s8", ref:"242b–243", lines:[[242,"at illum"],[243,TEXT[243]]],
+  verb:["videt"], vwhy:"<b>videt</b> — 3rd person singular, present: <i>sees</i>. Singular, although there are two subjects joined by <i>-que</i> — the verb agrees with the nearer one, <i>Styx</i>.",
+  vno:{},
+  subj:["styx","manesque"], swhy:"<b>Styx atra</b> and <b>Manes profundi</b> — two nominatives joined by <i>-que</i>: <i>the black Styx and the deep-lying spirits of the dead</i>.",
+  sno:{ illum:"<b>illum</b> is accusative — <i>that (pole)</i>, the object of <i>videt</i>.", pedibus:"<b>pedibus</b> is ablative after <i>sub</i>: <i>beneath (their) feet</i>.", atra:"<b>atra</b> is the adjective <i>black</i>, agreeing with the subject. Find the noun.", profundi:"<b>profundi</b> is the adjective <i>deep</i>, agreeing with the second subject. Find the noun."},
+  chunks:[
+    {l:"at",e:"but",n:"Contrast with <i>hic vertex</i>."},
+    {l:"Styx atra Manesque profundi",e:"the black Styx and the deep-lying spirits of the dead",n:"Compound subject; the verb is singular, agreeing with <i>Styx</i>."},
+    {l:"videt",e:"see(s)",n:""},
+    {l:"illum",e:"that one (the other pole)",n:"Object — the south celestial pole."},
+    {l:"sub pedibus",e:"beneath (their) feet",n:""}
+  ],
+  model:"but the black Styx and the deep-lying spirits of the dead see that one beneath their feet.",
+  shape:"The south pole belongs to the underworld. <i>illum</i> is thrown forward to the line-end of 242 for contrast with <i>hic</i>."
+},
+{ id:"s9", ref:"244–246", lines:[[244,TEXT[244]],[245,TEXT[245]],[246,TEXT[246]]],
+  verb:["elabitur"], vwhy:"<b>elabitur</b> — 3rd person singular, present, <b>deponent</b>: <i>glides out</i>. It looks passive (<i>-tur</i>) but the meaning is active.",
+  vno:{ tingi:"<b>tingi</b> is a present passive <b>infinitive</b> (<i>to be dipped</i>), depending on <i>metuentis</i>. Not finite.", metuentis:"<b>metuentis</b> is a present participle (<i>fearing</i>). No person ending — not the main verb."},
+  subj:["anguis"], swhy:"<b>Anguis</b> — nominative singular: <i>the Snake</i> (the constellation Draco). <i>maximus</i> agrees with it.",
+  sno:{ maximus:"<b>maximus</b> is the adjective <i>very great</i>, agreeing with the subject. Find the noun.", arctos:"<b>Arctos</b> is accusative plural (a Greek ending, <i>-os</i>): <i>the (two) Bears</i>, governed by <i>circum</i> and <i>per</i>.", oceani:"<b>Oceani</b> is genitive — <i>of Ocean</i>, going with <i>aequore</i>.", flexu:"<b>flexu</b> is ablative — <i>with a coil</i>."},
+  chunks:[
+    {l:"hic",e:"here",n:"Adverb here (<i>at this point of the sky</i>). Some take it as <i>this</i> with <i>Anguis</i>; either way, the Snake is Draco."},
+    {l:"maximus … Anguis",e:"the huge Snake",n:"Subject, split by five words."},
+    {l:"elabitur",e:"glides out",n:"Deponent — active in meaning."},
+    {l:"flexu sinuoso",e:"with (its) winding coil",n:"Ablative of manner."},
+    {l:"in morem fluminis",e:"like a river",n:"Literally <i>in the manner of a river</i>."},
+    {l:"circum perque duas … Arctos",e:"around and between the two Bears",n:"Two prepositions sharing one object. Ursa Major and Ursa Minor."},
+    {l:"Arctos … metuentis",e:"the Bears which fear",n:"<i>Arctos</i> repeated (epanalepsis). <i>metuentis</i> = accusative plural (poetic <i>-is</i> for <i>-es</i>) agreeing with it — not genitive singular."},
+    {l:"tingi aequore Oceani",e:"to be dipped in Ocean's surface",n:"Passive infinitive after <i>metuentis</i>. The Bears never set below the horizon."}
+  ],
+  model:"Here the huge Snake glides out with its winding coil, like a river, around and between the two Bears — the Bears which fear to be dipped in the surface of Ocean.",
+  shape:"Two traps: a deponent verb that looks passive, and <i>metuentis</i>, which looks genitive singular but is accusative plural with <i>Arctos</i>. The repeated <i>Arctos</i> lets Virgil add the myth (Juno forbade the Bears to bathe in Ocean)."
+},
+{ id:"s10", ref:"247–248", lines:[[247,TEXT[247]],[248,TEXT[248]]],
+  verb:["silet","densentur"], vwhy:"<b>silet</b> and <b>densentur</b> — two main verbs joined by <i>et</i>: <i>is silent</i> … <i>are thickened</i>. Each has its own subject. (<i>perhibent</i> is inside <i>ut perhibent</i>.)",
+  vno:{ perhibent:"<b>perhibent</b> is finite, but it belongs to <i>ut perhibent</i> = <i>as they say</i>, a small parenthesis. Look for the verbs of the main statement."},
+  subj:["nox","tenebrae"], swhy:"<b>nox</b> (with <i>intempesta</i>) is the subject of <i>silet</i>; <b>tenebrae</b> is the subject of <i>densentur</i>. Both are nominative.",
+  sno:{ nocte:"<b>nocte</b> is ablative — <i>with night (drawn over)</i>. The nominative form is <i>nox</i>.", intempesta:"<b>intempesta</b> is an adjective (<i>dead, timeless</i>) agreeing with the subject. Find the noun.", obtenta:"<b>obtenta</b> is a participle agreeing with <i>nocte</i> (ablative)."},
+  chunks:[
+    {l:"illic",e:"there",n:"At the south pole."},
+    {l:"ut perhibent",e:"as they say",n:"Virgil signals that this is report, not knowledge."},
+    {l:"aut",e:"either",n:"Answered by <i>aut</i> in 249."},
+    {l:"intempesta nox semper silet",e:"the dead of night is always silent",n:"<i>intempesta nox</i>: literally <i>timeless night</i>."},
+    {l:"et tenebrae densentur",e:"and darkness thickens",n:"Passive in form; <i>is thickened</i> → <i>thickens</i>."},
+    {l:"obtenta nocte",e:"with night drawn over (it)",n:"Ablative: participle + noun, close to an ablative absolute."}
+  ],
+  model:"There, as they say, either the dead of night is always silent and darkness thickens under a night drawn over it;",
+  shape:"First of two alternatives (<i>aut … aut</i>). Two clauses, two verbs, two subjects — pair them up: <i>nox silet</i>, <i>tenebrae densentur</i>."
+},
+{ id:"s11", ref:"249–251", lines:[[249,TEXT[249]],[250,TEXT[250]],[251,TEXT[251]]],
+  verb:["redit","reducit","accendit"], vwhy:"Three main verbs: <b>redit</b> and <b>reducit</b> (Aurora <i>returns</i> and <i>brings back</i>) and then <b>accendit</b> (Vesper <i>kindles</i>). <i>adflavit</i> is inside the <i>ubi</i>-clause.",
+  vno:{ adflavit:"<b>adflavit</b> is finite (perfect), but it is the verb of the <i>ubi</i>-clause: <i>when the rising sun has breathed on us</i>. Subordinate, not main."},
+  subj:["aurora","vesper"], swhy:"<b>Aurora</b> is the subject of <i>redit</i> and <i>reducit</i>; <b>Vesper</b> is the subject of <i>accendit</i>. Both nominative. (<i>Oriens</i> is the subject of <i>adflavit</i> in the <i>ubi</i>-clause.)",
+  sno:{ oriens:"<b>Oriens</b> is nominative, but it is the subject of <i>adflavit</i> inside the <i>ubi</i>-clause. Who returns, brings back, kindles?", nobis:"<b>nobis</b> here is ablative after <i>a</i>: <i>from us</i>.", nosque:"<b>nos</b> is accusative — the object of <i>adflavit</i>: <i>breathed on us</i>.", lumina:"<b>lumina</b> is accusative plural — the object of <i>accendit</i>.", sera:"<b>sera</b> agrees with <i>lumina</i> (neuter plural): <i>late lights</i>. It cannot be feminine nominative because <i>Vesper</i> is masculine.", diemque:"<b>diem</b> is accusative — object of <i>reducit</i>."},
+  chunks:[
+    {l:"aut",e:"or",n:"The second alternative."},
+    {l:"Aurora redit a nobis",e:"Dawn returns from us",n:"i.e. when our day ends, dawn goes to them."},
+    {l:"diemque reducit",e:"and brings back the day",n:""},
+    {l:"ubi Oriens primus adflavit nos",e:"when the rising Sun has first breathed on us",n:"<i>ubi</i> + perfect. <i>primus</i> is predicative: <i>first</i>."},
+    {l:"equis anhelis",e:"with his panting horses",n:"Ablative of means. The Sun's chariot-team."},
+    {l:"illic Vesper rubens",e:"there red Evening",n:"Subject of the last clause; <i>rubens</i> agrees with masculine <i>Vesper</i>."},
+    {l:"accendit sera lumina",e:"kindles his late lights",n:"<i>sera</i> is neuter plural with <i>lumina</i>."}
+  ],
+  model:"or Dawn returns from us and brings back the day, and when the rising Sun has first breathed on us with his panting horses, there red Evening kindles his late lights.",
+  shape:"The antipodes: their dawn is our dusk. Watch the two <i>-que</i> clauses and the <i>ubi</i>-clause tucked in the middle; find <i>Aurora</i>, then <i>Vesper</i>, and give each its verbs."
+}
+];
+
+/* ------------------------------------------------------------
+   LEXICON  keyed by form (lower-case, no punctuation).
+   k = kind: v finite verb | pt participle | inf infinitive | n noun | a adjective |
+       pn pronoun | num numeral | pr preposition | adv adverb | c conjunction
+   l = lemma; p = parse; m = meaning; e = etymology (derivatives only); n = note
+   ------------------------------------------------------------ */
+const LEX = {
+idcirco:{k:"adv",l:"idcirco (adverb)",p:"adverb",m:"for that reason, therefore",e:"circus, circle, circuit, circumstance (from <i>circum/circa</i>)",n:"Made of <i>id</i> + <i>circa</i>: 'around that'. Points back to what came before."},
+certis:{k:"a",l:"certus, -a, -um",p:"ablative plural feminine, agreeing with <i>partibus</i> — <span class='amb'>the form is also dative plural</span>",m:"fixed, definite, certain",e:"certain, certify, certificate, ascertain, concert<span class='lang'>Fr. certain · It. certo · Sp. cierto</span>"},
+dimensum:{k:"pt",l:"dimetior, dimetiri, dimensus sum (4, deponent)",p:"perfect participle, accusative singular masculine, agreeing with <i>orbem</i>",m:"measured out, divided up",e:"dimension, measure, immense, commensurate<span class='lang'>Fr. mesure · It. misura · Sp. medida</span>",n:"Deponent verb, but this participle is used with a passive sense: 'having been measured out'."},
+partibus:{k:"n",l:"pars, partis, f. (3)",p:"ablative plural — <span class='amb'>the form is also dative plural</span>; here 'in/into fixed parts'",m:"part, portion",e:"part, particle, partial, party, partner, department, apartment<span class='lang'>Fr. partie · It. parte · Sp. parte</span>"},
+orbem:{k:"n",l:"orbis, orbis, m. (3)",p:"accusative singular — object of <i>regit</i>",m:"circle, sphere, orb",e:"orb, orbit, orbital, exorbitant<span class='lang'>Fr. orbe · It. orbita</span>"},
+per:{k:"pr",l:"per (+ accusative)",p:"preposition + accusative",m:"through, along",e:"per-, perfect, permit, pervade, perennial<span class='lang'>It. per · Sp. por</span>"},
+perque:{k:"pr",l:"per (+ accusative) + -que",p:"preposition + accusative, with <i>-que</i> 'and'",m:"and through / and between",e:"per-, perfect, permit, pervade<span class='lang'>It. per · Sp. por</span>",n:"<i>circum perque duas Arctos</i>: two prepositions sharing one object."},
+duodena:{k:"num",l:"duodeni, -ae, -a (distributive numeral)",p:"accusative plural neuter, agreeing with <i>astra</i>",m:"twelve (each), twelve",e:"dozen, duodecimal, duodenum<span class='lang'>Fr. douze, douzaine · It. dodici · Sp. doce</span>"},
+regit:{k:"v",l:"rego, regere, rexi, rectum (3)",p:"3rd person singular, present indicative active",m:"rules, guides, steers",e:"regent, regime, regiment, regular, region, rule, direct, correct, erect, rector<span class='lang'>Fr. régir, règle · It. reggere · Sp. regir</span>"},
+mundi:{k:"n",l:"mundus, -i, m. (2)",p:"genitive singular — with <i>astra</i>: 'the stars of the heaven'",m:"the heavens, the firmament; (also) the world",e:"mundane, demimonde<span class='lang'>Fr. monde · It. mondo · Sp. mundo</span>",n:"In this passage <i>mundus</i> means the sky/cosmos, not the earth."},
+mundus:{k:"n",l:"mundus, -i, m. (2)",p:"nominative singular — subject",m:"the heavens, the sky (the celestial sphere)",e:"mundane, demimonde<span class='lang'>Fr. monde · It. mondo · Sp. mundo</span>",n:"Here the sky as a tilted sphere: high in the north, low in the south."},
+sol:{k:"n",l:"sol, solis, m. (3)",p:"nominative singular — subject",m:"the sun",e:"solar, solstice, solarium, parasol, insolation<span class='lang'>Fr. soleil · It. sole · Sp. sol</span>"},
+aureus:{k:"a",l:"aureus, -a, -um",p:"nominative singular masculine, agreeing with <i>sol</i>",m:"golden",e:"aureole, auriferous, oriole, Au (the chemical symbol), 'or' in heraldry<span class='lang'>Fr. or · It. oro · Sp. oro</span>"},
+astra:{k:"n",l:"astrum, -i, n. (2)",p:"accusative plural — governed by <i>per</i>",m:"stars, constellations",e:"astral, astronomy, astrology, asterisk, aster, disaster<span class='lang'>Fr. astre · It. astro · Sp. astro</span>",n:"A Greek loan-word (ἄστρον). Here the twelve signs of the zodiac."},
+quinque:{k:"num",l:"quinque (indeclinable)",p:"numeral, with <i>zonae</i>",m:"five",e:"quintet, quintuple, quinquennial, Quintus<span class='lang'>Fr. cinq · It. cinque · Sp. cinco</span>"},
+tenent:{k:"v",l:"teneo, tenere, tenui, tentum (2)",p:"3rd person plural, present indicative active",m:"hold, occupy",e:"tenant, tenure, tenacious, tenor, contain, retain, maintain, detain, entertain, lieutenant<span class='lang'>Fr. tenir · It. tenere · Sp. tener</span>"},
+caelum:{k:"n",l:"caelum, -i, n. (2)",p:"accusative singular — object of <i>tenent</i>",m:"sky, heaven",e:"celestial, Celeste, ceiling (probably)<span class='lang'>Fr. ciel · It. cielo · Sp. cielo</span>"},
+zonae:{k:"n",l:"zona, -ae, f. (1)",p:"nominative plural — subject of <i>tenent</i>",m:"belts, zones",e:"zone, zonal, time zone, zoning<span class='lang'>Fr. zone · It. zona · Sp. zona</span>",n:"Greek ζώνη, a belt or girdle — the five 'belts' of the sky."},
+quarum:{k:"pn",l:"qui, quae, quod (relative pronoun)",p:"genitive plural feminine — 'of which (zones)'",m:"of which, of these",e:"quorum, quod, qua<span class='lang'>Fr. qui, que · It. che · Sp. que</span>",n:"A 'connecting relative' at the start of a new sentence: translate as 'of these'."},
+una:{k:"num",l:"unus, -a, -um",p:"nominative singular feminine — subject; supply <i>zona</i>",m:"one",e:"unit, union, unique, unanimous, uniform, universe, unicorn, onion<span class='lang'>Fr. un, une · It. uno, una · Sp. uno, una</span>"},
+corusco:{k:"a",l:"coruscus, -a, -um",p:"ablative singular masculine, agreeing with <i>sole</i> — <span class='amb'>the form is also dative singular</span>",m:"flashing, glittering",e:"coruscate, coruscating"},
+semper:{k:"adv",l:"semper (adverb)",p:"adverb",m:"always",e:"sempiternal, sempre (musical direction)<span class='lang'>Fr. sempiternel · It. sempre · Sp. siempre</span>"},
+sole:{k:"n",l:"sol, solis, m. (3)",p:"ablative singular — ablative of cause with <i>rubens</i>",m:"the sun",e:"solar, solstice, solarium, parasol, insolation<span class='lang'>Fr. soleil · It. sole · Sp. sol</span>"},
+rubens:{k:"pt",l:"rubeo, rubere (2)",p:"present participle, nominative singular feminine, agreeing with <i>una</i>",m:"glowing red, reddening",e:"ruby, rubric, rubella, rubicund, rubidium, rouge<span class='lang'>Fr. rouge · It. rubino · Sp. rubio</span>"},
+et:{k:"c",l:"et (conjunction)",p:"conjunction",m:"and",e:"et cetera, ampersand (the sign '&' is a ligature of <i>et</i>)<span class='lang'>Fr. et · It. e, ed</span>"},
+torrida:{k:"a",l:"torridus, -a, -um",p:"nominative singular feminine, agreeing with <i>una</i>",m:"scorched, parched",e:"torrid, torrent, torrefy, toast<span class='lang'>Fr. torride · It. torrido · Sp. tórrido</span>"},
+ab:{k:"pr",l:"a / ab (+ ablative)",p:"preposition + ablative",m:"from, by",e:"ab-, absent, abduct, abnormal, abuse"},
+igni:{k:"n",l:"ignis, ignis, m. (3)",p:"ablative singular after <i>ab</i> — <span class='amb'>the form <i>igni</i> is also dative singular</span>",m:"fire",e:"ignite, ignition, igneous",n:"Third-declension i-stem: ablative <i>igni</i> or <i>igne</i>."},
+quam:{k:"pn",l:"qui, quae, quod (relative pronoun)",p:"accusative singular feminine — governed by <i>circum</i>, which follows it; refers back to <i>una</i>",m:"which",e:"quorum, quod, qua<span class='lang'>Fr. que · It. che · Sp. que</span>"},
+circum:{k:"pr",l:"circum (+ accusative)",p:"preposition + accusative",m:"around",e:"circumference, circumstance, circus, circuit, circle, circulate<span class='lang'>Fr. cirque · It. circo</span>",n:"In 235 it comes <i>after</i> its noun: <i>quam circum</i> (anastrophe)."},
+extremae:{k:"a",l:"extremus, -a, -um",p:"nominative plural feminine — subject; supply <i>zonae</i>",m:"outermost, furthest",e:"extreme, extremity, extremist<span class='lang'>Fr. extrême · It. estremo · Sp. extremo</span>"},
+dextra:{k:"n",l:"dextra, -ae, f. (or dexter, -tra, -trum)",p:"ablative singular feminine — 'on the right (side)'",m:"the right hand / right side",e:"dexterity, dextrous, ambidextrous, dextrose<span class='lang'>It. destra · Sp. diestro</span>"},
+laevaque:{k:"n",l:"laeva, -ae, f. + -que",p:"ablative singular feminine + 'and' — 'and on the left'",m:"the left side",e:"levo- (in chemistry: levorotatory), laevulose"},
+trahuntur:{k:"v",l:"traho, trahere, traxi, tractum (3)",p:"3rd person plural, present indicative <b>passive</b>",m:"are drawn, are stretched",e:"tract, tractor, traction, attract, contract, extract, subtract, abstract, trace, train, trait, portray, treat<span class='lang'>Fr. traire, traiter · It. trarre · Sp. traer</span>"},
+caeruleae:{k:"a",l:"caeruleus, -a, -um",p:"nominative plural feminine, agreeing with <i>extremae</i>",m:"dark blue, blue-black",e:"cerulean<span class='lang'>It. ceruleo</span>",n:"From <i>caelum</i>: sky-coloured — here the dark blue of ice."},
+glacie:{k:"n",l:"glacies, -ei, f. (5)",p:"ablative singular — ablative of means with <i>concretae</i>",m:"ice",e:"glacier, glacial, glacé, glaciation<span class='lang'>Fr. glace · It. ghiaccio</span>"},
+concretae:{k:"pt",l:"concresco, concrescere, concrevi, concretum (3)",p:"perfect participle passive, nominative plural feminine, agreeing with <i>extremae</i>",m:"frozen solid, congealed",e:"concrete, concretion; (from <i>cresco</i>) crescent, increase, crescendo, recruit, crew<span class='lang'>Fr. croître · It. crescere · Sp. crecer</span>"},
+atque:{k:"c",l:"atque (conjunction)",p:"conjunction",m:"and",e:"—"},
+imbribus:{k:"n",l:"imber, imbris, m. (3)",p:"ablative plural — ablative of means with <i>concretae</i>; <span class='amb'>the form is also dative plural</span>",m:"rainstorms, showers",e:"imbrex, imbricate (roof tiles that shed rain)"},
+atris:{k:"a",l:"ater, atra, atrum",p:"ablative plural masculine, agreeing with <i>imbribus</i> — <span class='amb'>the form is also dative plural</span>",m:"black, dark, gloomy",e:"atrabilious; atrium (by the ancient explanation: blackened by hearth smoke)"},
+has:{k:"pn",l:"hic, haec, hoc (demonstrative)",p:"accusative plural feminine — governed by <i>inter</i>, which follows it",m:"these (zones)",e:"—<span class='lang'>ad hoc, hic et nunc</span>"},
+inter:{k:"pr",l:"inter (+ accusative)",p:"preposition + accusative, placed after <i>has</i>",m:"between",e:"inter-, interval, interior, interest, intermediate, enter (via Fr.)<span class='lang'>Fr. entre · It. tra, fra · Sp. entre</span>"},
+mediamque:{k:"a",l:"medius, -a, -um + -que",p:"accusative singular feminine + 'and' — also governed by <i>inter</i>; supply <i>zonam</i>",m:"and the middle (one)",e:"medium, media, mediate, medieval, Mediterranean, intermediate, mean, moiety<span class='lang'>Fr. milieu, moyen · It. mezzo · Sp. medio</span>"},
+duae:{k:"num",l:"duo, duae, duo",p:"nominative plural feminine — subject; supply <i>zonae</i>",m:"two",e:"dual, duet, duel, double, duplicate, deuce, dozen<span class='lang'>Fr. deux · It. due · Sp. dos</span>"},
+mortalibus:{k:"n",l:"mortalis, -is, m. (3) (adjective used as a noun)",p:"<b>dative</b> plural — 'granted <i>to</i> mortals'; <span class='amb'>the form is also ablative plural</span>",m:"mortals, human beings",e:"mortal, immortal, mortality, mortuary, mortgage, mortify<span class='lang'>Fr. mortel · It. mortale · Sp. mortal</span>"},
+aegris:{k:"a",l:"aeger, aegra, aegrum",p:"dative plural masculine, agreeing with <i>mortalibus</i> — <span class='amb'>the form is also ablative plural</span>",m:"sick, suffering, wretched",e:"aegrotat (a university certificate of illness)"},
+munere:{k:"n",l:"munus, muneris, n. (3)",p:"ablative singular — 'by the gift'",m:"gift, favour; duty",e:"municipal, munificent, remunerate, immune, community, common<span class='lang'>Fr. commun · It. comune · Sp. común</span>"},
+concessae:{k:"pt",l:"concedo, concedere, concessi, concessum (3)",p:"perfect participle passive, nominative plural feminine, agreeing with <i>duae</i>; <i>sunt</i> understood",m:"granted, conceded",e:"concede, concession, cede, proceed, succeed, access, recess, exceed, necessary, predecessor<span class='lang'>Fr. céder · It. concedere · Sp. conceder</span>"},
+divum:{k:"n",l:"divus, -i, m. (2)",p:"<b>genitive plural</b> (poetic short form of <i>divorum</i>) — 'of the gods', with <i>munere</i>",m:"gods",e:"divine, divinity, diva<span class='lang'>Fr. divin · It. divino · Sp. divino</span>",n:"Not accusative singular. The <i>-um</i> genitive plural is common in verse (cf. <i>deum</i>, <i>virum</i>)."},
+via:{k:"n",l:"via, -ae, f. (1)",p:"nominative singular — subject of <i>secta [est]</i>",m:"road, path",e:"via, viaduct, trivial, obvious, deviate, previous, voyage, convey, convoy, envoy<span class='lang'>Fr. voie, voyage · It. via · Sp. vía</span>",n:"The 'path' is the ecliptic — the sun's yearly track through the zodiac."},
+secta:{k:"pt",l:"seco, secare, secui, sectum (1)",p:"perfect participle passive, nominative singular feminine, agreeing with <i>via</i>; <i>est</i> understood",m:"cut",e:"section, sector, secant, insect, dissect, bisect, segment<span class='lang'>Fr. scier · It. segare · Sp. segar</span>"},
+ambas:{k:"num",l:"ambo, ambae, ambo",p:"accusative plural feminine — governed by <i>per</i>",m:"both",e:"ambidextrous, ambiguous, ambivalent, ambient, ambition"},
+obliquus:{k:"a",l:"obliquus, -a, -um",p:"nominative singular masculine, agreeing with <i>ordo</i>",m:"slanting, oblique",e:"oblique, obliquity<span class='lang'>Fr. oblique · It. obliquo · Sp. oblicuo</span>"},
+qua:{k:"pn",l:"qui, quae, quod (relative), ablative feminine used as an adverb",p:"'along which, where' — refers to <i>via</i>",m:"along which, where",e:"qua, quorum<span class='lang'>Fr. où (partly) · It. qua</span>"},
+se:{k:"pn",l:"se (reflexive pronoun)",p:"accusative — object of <i>verteret</i>, referring to <i>ordo</i>",m:"itself",e:"per se, suicide (from <i>sui</i>)<span class='lang'>Fr. se · It. si · Sp. se</span>"},
+signorum:{k:"n",l:"signum, -i, n. (2)",p:"genitive plural — 'of the signs (of the zodiac)'",m:"signs, constellations",e:"sign, signal, signature, significant, design, resign, assign, ensign, insignia, seal<span class='lang'>Fr. signe · It. segno · Sp. seña, signo</span>"},
+verteret:{k:"v",l:"verto, vertere, verti, versum (3)",p:"3rd person singular, <b>imperfect subjunctive</b> active — verb of the <i>qua</i>-clause (purpose)",m:"might turn",e:"vertical, vertigo, vertex, convert, invert, reverse, verse, version, versus, divorce, universe, advertise, vertebra<span class='lang'>Fr. verser · Sp. verter</span>",n:"Subjunctive because the relative clause expresses purpose: 'so that along it … might turn'."},
+ordo:{k:"n",l:"ordo, ordinis, m. (3)",p:"nominative singular — subject of <i>verteret</i>",m:"order, row, line",e:"order, ordinary, ordinal, ordain, coordinate, subordinate, ordinance<span class='lang'>Fr. ordre · It. ordine · Sp. orden</span>"},
+ut:{k:"c",l:"ut (conjunction)",p:"conjunction + indicative: 'as, just as'",m:"as",e:"—",n:"With the indicative, <i>ut</i> is 'as/when', not 'in order that'."},
+ad:{k:"pr",l:"ad (+ accusative)",p:"preposition + accusative",m:"towards, to",e:"ad-, advance, adjacent, admit, adverb, ad hoc<span class='lang'>Fr. à · It. a · Sp. a</span>"},
+scythiam:{k:"n",l:"Scythia, -ae, f. (1)",p:"accusative singular — governed by <i>ad</i>",m:"Scythia (the far north-east, beyond the Black Sea)",e:"Scythian, Scythia"},
+riphaeasque:{k:"a",l:"Riphaeus, -a, -um + -que",p:"accusative plural feminine + 'and', agreeing with <i>arces</i>",m:"and the Rhipaean (mountains)",e:"Rhipaean (a name for the mythical mountains of the far north)"},
+arduus:{k:"a",l:"arduus, -a, -um",p:"nominative singular masculine, agreeing with <i>mundus</i> — predicative: 'rises <i>steep</i>'",m:"steep, high",e:"arduous"},
+arces:{k:"n",l:"arx, arcis, f. (3)",p:"accusative plural — governed by <i>ad</i>",m:"heights, peaks, citadels",e:"(related to <i>arceo</i>) coerce, exercise"},
+consurgit:{k:"v",l:"consurgo, consurgere, consurrexi, consurrectum (3)",p:"3rd person singular, present indicative active — verb of the <i>ut</i>-clause",m:"rises up",e:"surge, insurgent, resurrection, source, resource<span class='lang'>Fr. source, surgir · It. sorgere · Sp. surgir</span>"},
+premitur:{k:"v",l:"premo, premere, pressi, pressum (3)",p:"3rd person singular, present indicative <b>passive</b>",m:"is pressed down",e:"press, pressure, print, impress, express, compress, depress, oppress, suppress<span class='lang'>Fr. presser · It. premere · Sp. prensa</span>"},
+libyae:{k:"n",l:"Libya, -ae, f. (1)",p:"genitive singular — 'of Libya', with <i>Austros</i>; <span class='amb'>the form is also dative singular and nominative plural</span>",m:"Libya (North Africa; the far south)",e:"Libya, Libyan"},
+devexus:{k:"a",l:"devexus, -a, -um",p:"nominative singular masculine, agreeing with <i>mundus</i> — predicative: 'is pressed down <i>sloping</i>'",m:"sloping down",e:"(from <i>veho</i>) vehicle, vector, convex, convey, inveigh"},
+in:{k:"pr",l:"in (+ accusative here)",p:"preposition + accusative: 'towards, into'",m:"towards",e:"in-, invade, induce, inflate<span class='lang'>Fr. en · It. in · Sp. en</span>",n:"With the ablative <i>in</i> means 'in/on'; with the accusative, motion 'into/towards'."},
+austros:{k:"n",l:"Auster, Austri, m. (2)",p:"accusative plural — governed by <i>in</i>",m:"the South winds, the south",e:"austral, Australia (not Austria, which is Germanic)"},
+hic:{k:"pn",l:"hic, haec, hoc (demonstrative)",p:"nominative singular masculine, agreeing with <i>vertex</i>",m:"this",e:"—<span class='lang'>ad hoc, hic et nunc</span>"},
+vertex:{k:"n",l:"vertex, verticis, m. (3)",p:"nominative singular — subject",m:"pole (of the sky); summit, whirl",e:"vertex, vertical, vortex"},
+nobis:{k:"pn",l:"nos (personal pronoun)",p:"<b>dative</b> plural — 'for us'; <span class='amb'>the form is also ablative plural</span>",m:"for us, to us",e:"nostrum, nostalgia (no — Greek); 'pater noster'<span class='lang'>Fr. nous · It. noi · Sp. nos</span>"},
+sublimis:{k:"a",l:"sublimis, -e",p:"nominative singular masculine, agreeing with <i>vertex</i>; <i>est</i> understood",m:"high, aloft, lofty",e:"sublime, sublimate<span class='lang'>Fr. sublime · It. sublime</span>"},
+at:{k:"c",l:"at (conjunction)",p:"conjunction",m:"but",e:"—"},
+illum:{k:"pn",l:"ille, illa, illud (demonstrative)",p:"accusative singular masculine — object of <i>videt</i>; 'that (pole)'",m:"that one",e:"—<span class='lang'>Fr. il, le · It. il, lo · Sp. él, el (all from <i>ille</i>)</span>"},
+sub:{k:"pr",l:"sub (+ ablative here)",p:"preposition + ablative: 'beneath'",m:"beneath, under",e:"sub-, submarine, subject, subway, subtract, suburb<span class='lang'>It. sotto (from <i>subtus</i>) · Sp. so-</span>"},
+pedibus:{k:"n",l:"pes, pedis, m. (3)",p:"ablative plural after <i>sub</i> — <span class='amb'>the form is also dative plural</span>",m:"feet",e:"pedal, pedestrian, pedestal, pedicure, centipede, impede, expedite, biped, pioneer<span class='lang'>Fr. pied · It. piede · Sp. pie</span>"},
+styx:{k:"n",l:"Styx, Stygis, f. (3)",p:"nominative singular — subject of <i>videt</i>",m:"the Styx (river of the underworld)",e:"Stygian"},
+atra:{k:"a",l:"ater, atra, atrum",p:"nominative singular feminine, agreeing with <i>Styx</i>",m:"black, dark",e:"atrabilious; atrium (by the ancient explanation)"},
+videt:{k:"v",l:"video, videre, vidi, visum (2)",p:"3rd person singular, present indicative active — agrees with the nearer subject, <i>Styx</i>",m:"sees",e:"video, vision, visible, evident, provide, revise, supervise, view, visit, envy, advice, interview<span class='lang'>Fr. voir · It. vedere · Sp. ver</span>"},
+manesque:{k:"n",l:"Manes, Manium, m. pl. + -que",p:"nominative plural + 'and' — second subject of <i>videt</i>",m:"and the spirits of the dead",e:"Manes; 'D.M.' (<i>Dis Manibus</i>) on Roman tombstones"},
+profundi:{k:"a",l:"profundus, -a, -um",p:"nominative plural masculine, agreeing with <i>Manes</i>",m:"deep, of the depths",e:"profound, profundity; (from <i>fundus</i>) fund, foundation, founder<span class='lang'>Fr. profond · It. profondo · Sp. profundo</span>"},
+maximus:{k:"a",l:"magnus, -a, -um (superlative maximus)",p:"nominative singular masculine, agreeing with <i>Anguis</i>",m:"very great, huge",e:"maximum, maxim, maximise; (from <i>magnus</i>) magnitude, magnify, magnate, major, mayor, majesty<span class='lang'>It. massimo · Sp. máximo</span>"},
+flexu:{k:"n",l:"flexus, -us, m. (4)",p:"ablative singular — ablative of manner",m:"bend, coil, winding",e:"flex, flexible, reflex, inflection, circumflex, deflect<span class='lang'>Fr. fléchir · It. flettere</span>"},
+sinuoso:{k:"a",l:"sinuosus, -a, -um",p:"ablative singular masculine, agreeing with <i>flexu</i> — <span class='amb'>the form is also dative singular</span>",m:"winding, full of curves",e:"sinuous, sinus, insinuate, sinusoid<span class='lang'>Fr. sinueux · It. sinuoso</span>"},
+elabitur:{k:"v",l:"elabor, elabi, elapsus sum (3, <b>deponent</b>)",p:"3rd person singular, present indicative — deponent: passive form, active meaning",m:"glides out, slips out",e:"lapse, elapse, collapse, relapse, prolapse, labile",n:"Do not translate as 'is glided'. Deponents look passive but mean active."},
+anguis:{k:"n",l:"anguis, anguis, m./f. (3)",p:"nominative singular — subject",m:"the Snake (the constellation Draco)",e:"anguine, anguilla (eel)<span class='lang'>Fr. anguille · It. anguilla</span>",n:"Not 'anguish' — that comes from <i>angustus</i>, 'narrow'."},
+duas:{k:"num",l:"duo, duae, duo",p:"accusative plural feminine, agreeing with <i>Arctos</i>",m:"two",e:"dual, duet, duel, double, duplicate, deuce<span class='lang'>Fr. deux · It. due · Sp. dos</span>"},
+morem:{k:"n",l:"mos, moris, m. (3)",p:"accusative singular after <i>in</i> — <i>in morem</i> + genitive = 'in the manner of, like'",m:"manner, custom",e:"moral, morale, morose, mores<span class='lang'>Fr. mœurs · It. morale</span>"},
+fluminis:{k:"n",l:"flumen, fluminis, n. (3)",p:"genitive singular — with <i>in morem</i>",m:"river",e:"flume, fluent, fluid, flux, influence, affluent, superfluous, fluctuate<span class='lang'>Fr. fleuve · It. fiume</span>"},
+arctos:{k:"n",l:"Arctos, -i, f. (Greek 2nd declension)",p:"<b>accusative plural</b> (Greek ending <i>-os</i>) — governed by <i>circum</i> and <i>per</i>",m:"the Bears (Ursa Major and Ursa Minor)",e:"Arctic, Antarctic, arctophile<span class='lang'>Fr. arctique · It. artico</span>",n:"Looks like a singular; it is plural (<i>duas … Arctos</i>). In 246 <i>metuentis</i> agrees with it."},
+oceani:{k:"n",l:"Oceanus, -i, m. (2)",p:"genitive singular — 'of Ocean', with <i>aequore</i>",m:"Ocean (the river encircling the world)",e:"ocean, oceanic<span class='lang'>Fr. océan · It. oceano · Sp. océano</span>"},
+metuentis:{k:"pt",l:"metuo, metuere, metui (3)",p:"present participle, <b>accusative plural</b> feminine (poetic <i>-is</i> for <i>-es</i>), agreeing with <i>Arctos</i> — <span class='amb'>the form also looks like genitive singular</span>",m:"fearing",e:"meticulous (originally 'fearful', from <i>metus</i>)",n:"Not 'of Ocean fearing'. It is the Bears who fear to be dipped."},
+aequore:{k:"n",l:"aequor, aequoris, n. (3)",p:"ablative singular — 'in the level surface'",m:"level surface, the sea",e:"equal, equator, equation, equanimity, adequate, equilibrium, equinox<span class='lang'>Fr. égal · It. uguale · Sp. igual</span>"},
+tingi:{k:"inf",l:"tingo, tingere, tinxi, tinctum (3)",p:"present <b>passive infinitive</b> — after <i>metuentis</i>",m:"to be dipped, to be wetted",e:"tint, tinge, tincture, taint, stain<span class='lang'>Fr. teindre, teint · It. tingere · Sp. teñir</span>"},
+illic:{k:"adv",l:"illic (adverb)",p:"adverb of place",m:"there",e:"—<span class='lang'>related to <i>ille</i></span>"},
+perhibent:{k:"v",l:"perhibeo, perhibere, perhibui, perhibitum (2)",p:"3rd person plural, present indicative active — verb of <i>ut perhibent</i>",m:"they say, they report",e:"(from <i>habeo</i>) habit, inhibit, exhibit, prohibit, able, habitat<span class='lang'>Fr. avoir · It. avere · Sp. haber</span>"},
+aut:{k:"c",l:"aut (conjunction)",p:"conjunction — <i>aut … aut</i> 'either … or'",m:"either / or",e:"—<span class='lang'>It. o · Sp. o · Fr. ou</span>"},
+intempesta:{k:"a",l:"intempestus, -a, -um",p:"nominative singular feminine, agreeing with <i>nox</i>",m:"timeless, dead (of night)",e:"(from <i>tempus</i>) tempest, temporal, temporary, tempo, tense, contemporary<span class='lang'>Fr. temps · It. tempo · Sp. tiempo</span>",n:"Literally 'without time': the dead of night, when there is no way of telling the hour."},
+silet:{k:"v",l:"sileo, silere, silui (2)",p:"3rd person singular, present indicative active",m:"is silent",e:"silent, silence<span class='lang'>Fr. silence · It. silenzio · Sp. silencio</span>"},
+nox:{k:"n",l:"nox, noctis, f. (3)",p:"nominative singular — subject of <i>silet</i>",m:"night",e:"nocturnal, nocturne, equinox<span class='lang'>Fr. nuit · It. notte · Sp. noche</span>"},
+obtenta:{k:"pt",l:"obtendo, obtendere, obtendi, obtentum (3)",p:"perfect participle passive, ablative singular feminine, agreeing with <i>nocte</i>",m:"spread over, drawn across",e:"(from <i>tendo</i>) tend, tent, tense, extend, intend, attention, pretend<span class='lang'>Fr. tendre · It. tendere</span>"},
+densentur:{k:"v",l:"denseo, densere (2)",p:"3rd person plural, present indicative <b>passive</b>",m:"are thickened, thicken",e:"dense, density, condense<span class='lang'>Fr. dense · It. denso · Sp. denso</span>"},
+nocte:{k:"n",l:"nox, noctis, f. (3)",p:"ablative singular — with <i>obtenta</i>: 'with night drawn over'",m:"night",e:"nocturnal, nocturne, equinox<span class='lang'>Fr. nuit · It. notte · Sp. noche</span>"},
+tenebrae:{k:"n",l:"tenebrae, -arum, f. pl. (1)",p:"nominative plural — subject of <i>densentur</i>",m:"darkness",e:"tenebrous, Tenebrae (the Holy Week service), tenebrism (in painting)<span class='lang'>Fr. ténèbres · It. tenebre · Sp. tinieblas</span>"},
+redit:{k:"v",l:"redeo, redire, redii, reditum (irregular)",p:"3rd person singular, present indicative active",m:"returns, goes back",e:"(from <i>eo</i>) exit, transit, initial, circuit, ambition, obituary, itinerary, issue"},
+a:{k:"pr",l:"a / ab (+ ablative)",p:"preposition + ablative",m:"from",e:"ab-, absent, abduct, abnormal"},
+aurora:{k:"n",l:"Aurora, -ae, f. (1)",p:"nominative singular — subject of <i>redit</i> and <i>reducit</i>",m:"Dawn (the goddess); the dawn",e:"aurora (borealis), Aurora<span class='lang'>Fr. aurore · It. aurora · Sp. aurora</span>"},
+diemque:{k:"n",l:"dies, diei, m. (5) + -que",p:"accusative singular + 'and' — object of <i>reducit</i>",m:"and the day",e:"diary, diurnal, dial, meridian, journal, journey, sojourn, adjourn<span class='lang'>Fr. jour · It. giorno · Sp. día</span>"},
+reducit:{k:"v",l:"reduco, reducere, reduxi, reductum (3)",p:"3rd person singular, present indicative active",m:"brings back, leads back",e:"reduce, duct, conduct, produce, educate, induce, duke, ductile, aqueduct<span class='lang'>Fr. réduire, duc · It. ridurre, duce · Sp. reducir</span>"},
+nosque:{k:"pn",l:"nos (personal pronoun) + -que",p:"accusative plural + 'and' — object of <i>adflavit</i>",m:"and (on) us",e:"nostrum, 'pater noster'<span class='lang'>Fr. nous · It. noi · Sp. nos</span>"},
+ubi:{k:"c",l:"ubi (conjunction)",p:"conjunction + perfect indicative: 'when'",m:"when",e:"ubiquitous, ubiquity"},
+primus:{k:"a",l:"primus, -a, -um",p:"nominative singular masculine, agreeing with <i>Oriens</i> — predicative: 'first'",m:"first",e:"prime, primary, primitive, primate, premier, prince, primrose<span class='lang'>Fr. premier · It. primo · Sp. primero</span>"},
+equis:{k:"n",l:"equus, -i, m. (2)",p:"ablative plural — ablative of means with <i>adflavit</i>; <span class='amb'>the form is also dative plural</span>",m:"horses",e:"equine, equestrian, equerry<span class='lang'>Sp. yegua (from <i>equa</i>)</span>",n:"The Sun's chariot team. French <i>cheval</i> and Italian <i>cavallo</i> come from <i>caballus</i>, not <i>equus</i>."},
+oriens:{k:"n",l:"oriens, orientis, m. (present participle of <i>orior</i> used as a noun)",p:"nominative singular — subject of <i>adflavit</i>",m:"the rising Sun; the East",e:"orient, oriental, orientation, origin, original, aboriginal<span class='lang'>Fr. orient · It. oriente · Sp. oriente</span>"},
+adflavit:{k:"v",l:"adflo, adflare, adflavi, adflatum (1)",p:"3rd person singular, <b>perfect</b> indicative active — verb of the <i>ubi</i>-clause",m:"has breathed on",e:"(from <i>flo</i>) inflate, deflate, conflate, flatulent, afflatus, soufflé<span class='lang'>Fr. souffler · It. soffiare · Sp. soplar</span>"},
+anhelis:{k:"a",l:"anhelus, -a, -um",p:"ablative plural masculine, agreeing with <i>equis</i> — <span class='amb'>the form is also dative plural</span>",m:"panting, gasping",e:"anhelation (rare); related to <i>halare</i>: exhale, inhale"},
+sera:{k:"a",l:"serus, -a, -um",p:"accusative plural <b>neuter</b>, agreeing with <i>lumina</i>",m:"late, evening",e:"soirée<span class='lang'>Fr. soir · It. sera</span>",n:"Looks like feminine nominative singular, but <i>Vesper</i> is masculine — so it goes with <i>lumina</i>."},
+accendit:{k:"v",l:"accendo, accendere, accendi, accensum (3)",p:"3rd person singular, present indicative active — <span class='amb'>the form is also perfect</span>; present fits the other verbs",m:"kindles, lights",e:"incendiary, incense, candle, candid, candidate, incandescent, chandelier<span class='lang'>It. accendere · Fr. chandelle</span>"},
+lumina:{k:"n",l:"lumen, luminis, n. (3)",p:"accusative plural — object of <i>accendit</i>",m:"lights",e:"luminous, illuminate, luminary, lumen, limn<span class='lang'>Fr. lumière · It. lume · Sp. lumbre</span>"},
+vesper:{k:"n",l:"Vesper, Vesperi, m. (2)",p:"nominative singular — subject of <i>accendit</i>",m:"the Evening Star; evening",e:"vespers, vespertine<span class='lang'>Fr. vêpres · It. vespro · Sp. víspera</span>"}
+};
+
+/* Per-sentence overrides where a form is parsed differently in another sentence. */
+const OVR = {
+"s9:hic":{k:"adv",l:"hic (adverb) — or hic, haec, hoc",p:"adverb 'here' (at this point of the sky); some editors take it as 'this' with <i>Anguis</i>",m:"here (or: this)",e:"—<span class='lang'>ad hoc, hic et nunc</span>"},
+"s10:ut":{k:"c",l:"ut (conjunction)",p:"conjunction + indicative — <i>ut perhibent</i> 'as they say'",m:"as",e:"—"},
+"s11:nobis":{k:"pn",l:"nos (personal pronoun)",p:"<b>ablative</b> plural after <i>a</i> — 'from us'; <span class='amb'>the form is also dative plural</span>",m:"us",e:"nostrum, 'pater noster'<span class='lang'>Fr. nous · It. noi · Sp. nos</span>"},
+"s11:rubens":{k:"pt",l:"rubeo, rubere (2)",p:"present participle, nominative singular <b>masculine</b>, agreeing with <i>Vesper</i>",m:"glowing red, reddening",e:"ruby, rubric, rubella, rubicund, rubidium, rouge<span class='lang'>Fr. rouge · It. rubino · Sp. rubio</span>"},
+"s11:illic":{k:"adv",l:"illic (adverb)",p:"adverb of place — 'there' (for the people at the other pole)",m:"there",e:"—<span class='lang'>related to <i>ille</i></span>"}
+};
+
+const KIND = {
+ v:"is a finite verb, but it is inside a subordinate clause. Look for the verb of the main clause.",
+ pt:"is a participle — a verb form, but with no person ending, so it cannot be the main verb on its own.",
+ inf:"is an infinitive — it has no person ending, so it cannot be the main verb.",
+ n:"is a noun. The main verb is a word with a person ending (-t, -nt, -tur, -ntur …).",
+ a:"is an adjective. Look for a word with a person ending.",
+ pn:"is a pronoun. Look for a word with a person ending.",
+ num:"is a number. Look for a word with a person ending.",
+ pr:"is a preposition. Look for a word with a person ending.",
+ adv:"is an adverb. Look for a word with a person ending.",
+ c:"is a conjunction — it joins words or clauses. Look for a word with a person ending."
+};
+const SKIND = {
+ v:"is a verb. The subject is a noun or pronoun in the nominative.",
+ pt:"is a participle. Look for the nominative noun it might agree with.",
+ inf:"is an infinitive, not a noun.",
+ n:"is a noun, but not in the nominative case here — check its ending and the parse.",
+ a:"is an adjective. It may describe the subject; find the noun it agrees with.",
+ pn:"is a pronoun, but not nominative here.",
+ num:"is a number. Find the noun.",
+ pr:"is a preposition; it cannot be a subject.",
+ adv:"is an adverb; it cannot be a subject.",
+ c:"is a conjunction; it cannot be a subject."
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+const SKEY="georgics231_helper_v1";
+let state = load();
+function load(){ try{ return JSON.parse(localStorage.getItem(SKEY)||"{}"); }catch(e){ return {}; } }
+function save(){ try{ localStorage.setItem(SKEY, JSON.stringify(state)); }catch(e){} }
+function st(id){ if(!state[id]) state[id]={verb:false,subj:false,chunk:0,model:false}; return state[id]; }
+
+let mode = "off";
+let cur = null; // current sentence object
+
+const norm = w => w.toLowerCase().replace(/[^a-z]/g,"");
+function lex(sid, w){ const f=norm(w); return OVR[sid+":"+f] || LEX[f] || null; }
+
+/* ============================================================
+   INDEX VIEW
+   ============================================================ */
+function renderIndex(){
+  const v=document.getElementById("viewIndex");
+  let h=`<div class="intro">
+    <p><b>How to use this.</b> Find the sentence you are stuck on and click it. Work through the steps in order — main verb, subject, then the sentence in construe order — before you look at the model. Use the <b>Word help</b> switch at the top when you want to check a word: <i>Meaning</i> gives the dictionary sense, <i>Parse</i> the full grammar, <i>Etymology</i> only the words that have come from it (the meaning stays hidden until you ask).</p>
+    <p style="color:var(--mute);font-size:13px">Virgil, <i>Georgics</i> 1.231–251 · the five zones of the sky and the two poles.</p>
+  </div><div class="idx">`;
+  SENT.forEach(s=>{
+    const p=st(s.id);
+    let status="not started", cls="";
+    if(p.model){status="✓ done";cls="done";}
+    else if(p.verb||p.subj||p.chunk>0){status="in progress";cls="part";}
+    const first=s.lines.map(l=>l[1]).join(" ");
+    h+=`<div class="card" onclick="openSent('${s.id}')">
+      <div><div class="ln">${s.ref}</div><div class="tag">${s.none?"verbless":""}</div></div>
+      <div class="tx lat">${first}</div>
+      <div class="st ${cls}">${status}</div></div>`;
+  });
+  h+=`</div>`;
+  v.innerHTML=h;
+}
+
+/* ============================================================
+   SENTENCE VIEW
+   ============================================================ */
+function openSent(id){
+  cur=SENT.find(s=>s.id===id);
+  document.getElementById("viewIndex").style.display="none";
+  const v=document.getElementById("viewSent"); v.style.display="block";
+  renderSent(); window.scrollTo(0,0); hidePop();
+}
+function backToIndex(){
+  cur=null; hidePop();
+  document.getElementById("viewSent").style.display="none";
+  document.getElementById("viewIndex").style.display="block";
+  renderIndex(); window.scrollTo(0,0);
+}
+function chipsHTML(s){
+  const p=st(s.id);
+  return s.lines.map(([no,txt])=>{
+    const words=txt.split(/\s+/).filter(Boolean).map((w,i)=>{
+      const f=norm(w); let cls="chip lat";
+      if(p.verb && s.verb.includes(f)) cls+=" verb";
+      if(p.subj && s.subj.includes(f)) cls+=" subj";
+      return `<span class="${cls}" data-w="${w.replace(/"/g,'&quot;')}" onclick="tapWord(event,this)">${w}</span>`;
+    }).join("");
+    return `<div class="vline"><span class="no">${no}</span>${words}</div>`;
+  }).join("");
+}
+function renderSent(){
+  const s=cur, p=st(s.id);
+  const i=SENT.indexOf(s);
+  const prev=SENT[i-1], next=SENT[i+1];
+  const stepOpen = !p.verb ? 1 : !p.subj ? 2 : 3;
+  let h=`<div class="sticky">
+    <div class="bar"><button onclick="backToIndex()">‹ All sentences</button><span>Lines ${s.ref} · ${stepOpen===1?"Step 1: find the main verb":stepOpen===2?"Step 2: find the subject":"Steps 3–4: construe, then check"}</span></div>
+    <div class="sent" id="sentBox">${chipsHTML(s)}</div>
+    <div class="hint" id="hint">${mode==="off"?"Click a word to choose it. Turn on Word help above if you want to check a word first.":"Click any word for help. When a step is active, the popover also lets you choose that word as your answer."}</div>
+  </div>`;
+
+  // STEP 1
+  h+=`<div class="step ${p.verb?"done":""}" id="step1"><h2><span class="n">1</span>Find the main verb</h2>
+    <p>Click the finite verb of the main clause — the word with a person ending that is not inside a subordinate clause. If you think there is none, use the button.</p>
+    <button class="btn" ${p.verb?"disabled":""} onclick="pickNoneVerb()">${s.noneLabel||"There is no finite verb"}</button>
+    <div class="fb ${p.verb?"ok":""}" id="fb1">${p.verb?s.vwhy:""}</div></div>`;
+  // STEP 2
+  h+=`<div class="step ${p.subj?"done":""} ${!p.verb?"locked":""}" id="step2"><h2><span class="n">2</span>Find the subject</h2>
+    <p>Click the nominative noun (or pronoun) that goes with the main verb. Check that its number matches the verb ending.</p>
+    <button class="btn" ${p.subj?"disabled":""} onclick="pickNoneSubj()">Not stated — it is in the verb ending</button>
+    <div class="fb ${p.subj?"ok":""}" id="fb2">${p.subj?s.swhy:""}</div></div>`;
+  // STEP 3
+  const shown=Math.min(p.chunk, s.chunks.length);
+  h+=`<div class="step ${shown>=s.chunks.length?"done":""} ${!p.subj?"locked":""}" id="step3"><h2><span class="n">3</span>Construe in order</h2>
+    <p>Now build the sentence in the order we would say it. Reveal one chunk at a time, translate it yourself, then press <i>Show English</i> to check.</p>
+    <div class="chunks" id="chunks">${s.chunks.slice(0,shown).map((c,i)=>chunkHTML(c,i)).join("")}</div>
+    <button class="btn primary" id="nextChunk" ${shown>=s.chunks.length?"disabled":""} onclick="nextChunk()">${shown===0?"Reveal first chunk":shown>=s.chunks.length?"All chunks shown":"Reveal next chunk ("+(shown+1)+"/"+s.chunks.length+")"}</button></div>`;
+  // STEP 4
+  h+=`<div class="step ${p.model?"done":""} ${shown<s.chunks.length?"locked":""}" id="step4"><h2><span class="n">4</span>Check against the model</h2>
+    <p>Write your own version first, then compare.</p>
+    <button class="btn" onclick="showModel()" ${p.model?"disabled":""}>Show model translation</button>
+    <div class="model ${p.model?"show":""}" id="model"><b>${s.model}</b><div class="shape"><b>The shape of the sentence.</b> ${s.shape}</div></div></div>`;
+  h+=`<div class="nav">
+    <button class="btn" ${prev?"":"disabled"} onclick="openSent('${prev?prev.id:""}')">‹ ${prev?prev.ref:""}</button>
+    <button class="btn" onclick="resetSent()">Reset this sentence</button>
+    <button class="btn" ${next?"":"disabled"} onclick="openSent('${next?next.id:""}')">${next?next.ref:""} ›</button></div>
+    <div class="spacer"></div>`;
+  document.getElementById("viewSent").innerHTML=h;
+}
+function chunkHTML(c,i){
+  const p=st(cur.id); const open=(p.open||[]).includes(i);
+  return `<div class="chunk" id="chunk${i}"><div class="cl lat">${c.l}</div>
+    ${open?`<div class="ce">${c.e}</div>${c.n?`<div class="cn">${c.n}</div>`:""}`:`<div class="ce"><button class="btn small" onclick="openChunk(${i})">Show English</button></div>`}</div>`;
+}
+function openChunk(i){ const p=st(cur.id); p.open=p.open||[]; if(!p.open.includes(i)) p.open.push(i); save(); renderSent(); }
+function scrollTo_(id){ requestAnimationFrame(()=>{ const el=document.getElementById(id); if(!el) return; const sh=document.querySelector(".sticky").offsetHeight+document.querySelector("header").offsetHeight; const y=el.getBoundingClientRect().top+window.scrollY-sh-12; window.scrollTo({top:y,behavior:"smooth"}); }); }
+function nextChunk(){ const p=st(cur.id); if(p.chunk<cur.chunks.length){p.chunk++; save(); renderSent(); scrollTo_("chunk"+(p.chunk-1));} }
+function showModel(){ const p=st(cur.id); p.model=true; save(); renderSent(); scrollTo_("step4"); }
+function resetSent(){ state[cur.id]={verb:false,subj:false,chunk:0,model:false,open:[]}; save(); renderSent(); }
+
+/* answer handling */
+function activeStep(){ const p=st(cur.id); return !p.verb?1:!p.subj?2:0; }
+function fb(n, ok, msg){ const el=document.getElementById("fb"+n); el.className="fb "+(ok?"ok":"bad"); el.innerHTML=msg; }
+function flashChip(w, cls){ document.querySelectorAll("#sentBox .chip").forEach(c=>{ if(norm(c.dataset.w)===norm(w)){ c.classList.add(cls); setTimeout(()=>c.classList.remove(cls),900);} }); }
+
+function answerVerb(w){
+  const s=cur, p=st(s.id), f=norm(w);
+  if(s.verb.includes(f)){ p.verb=true; save(); renderSent(); fb(1,true,s.vwhy); scrollTo_("step2"); return; }
+  flashChip(w,"no");
+  let msg = s.vno[f];
+  if(!msg){ const L=lex(s.id,w); msg = L ? `<b>${w.replace(/[.,;:]+$/,"")}</b> ${KIND[L.k]||"is not the main verb."}` : `Not this one — try again.`; }
+  fb(1,false,msg);
+}
+function pickNoneVerb(){
+  const s=cur, p=st(s.id);
+  if(s.none){ p.verb=true; save(); renderSent(); fb(1,true,s.vwhy); scrollTo_("step2"); }
+  else fb(1,false,`There is a finite verb here. Look for an ending in <i>-t</i>, <i>-nt</i>, <i>-tur</i> or <i>-ntur</i> that is not inside a subordinate clause (after <i>ut</i>, <i>ubi</i>, <i>qua</i> …).`);
+}
+function answerSubj(w){
+  const s=cur, p=st(s.id), f=norm(w);
+  if(s.subj.includes(f)){ p.subj=true; save(); renderSent(); fb(2,true,s.swhy); scrollTo_("step3"); return; }
+  flashChip(w,"no");
+  let msg = s.sno[f];
+  if(!msg){ const L=lex(s.id,w); msg = L ? `<b>${w.replace(/[.,;:]+$/,"")}</b> ${SKIND[L.k]||"is not the subject."}` : `Not this one — try again.`; }
+  fb(2,false,msg);
+}
+function pickNoneSubj(){ fb(2,false,`The subject is stated here — there is a nominative noun in the sentence. Find it.`); }
+
+/* ============================================================
+   WORD TAP + POPOVER
+   ============================================================ */
+let popWord=null, popEl=null;
+function tapWord(ev, el){
+  ev.stopPropagation();
+  const w=el.dataset.w, step=activeStep();
+  if(mode==="off"){
+    if(step===1) return answerVerb(w);
+    if(step===2) return answerSubj(w);
+    return; // nothing to do
+  }
+  showPop(el, w, step);
+}
+function showPop(el, w, step, revealMeaning){
+  const L=lex(cur.id,w); const pop=document.getElementById("pop");
+  const clean=w.replace(/^[^A-Za-z]+|[^A-Za-z]+$/g,"");
+  let body=`<button class="x" onclick="hidePop()">×</button><div class="w lat">${clean}</div>`;
+  if(!L){ body+=`<div class="off">No entry for this word.</div>`; }
+  else if(mode==="mean"){
+    body+=`<div class="lem">${L.l}</div><div class="row"><span class="k">meaning</span>${L.m}</div>`;
+  } else if(mode==="parse"){
+    body+=`<div class="lem">${L.l}</div>
+      <div class="row"><span class="k">parse</span>${L.p}</div>
+      <div class="row"><span class="k">meaning</span>${L.m}</div>
+      ${L.n?`<div class="warn">${L.n}</div>`:""}`;
+  } else if(mode==="ety"){
+    body+=`<div class="row ety"><span class="k">words that come from it</span>${L.e}</div>`;
+    if(revealMeaning) body+=`<div class="row"><span class="k">meaning</span><span class="lem">${L.l}</span><br>${L.m}</div>`;
+    else body+=`<div class="acts"><button class="btn" onclick="showPop(popEl,'${w.replace(/'/g,"\\'")}',${step},true)">Show meaning</button></div>`;
+  }
+  if(step===1) body+=`<div class="acts"><button class="btn primary" onclick="hidePop();answerVerb('${w.replace(/'/g,"\\'")}')">This is the main verb</button></div>`;
+  if(step===2) body+=`<div class="acts"><button class="btn primary" onclick="hidePop();answerSubj('${w.replace(/'/g,"\\'")}')">This is the subject</button></div>`;
+  pop.innerHTML=body; pop.classList.add("show");
+  popWord=w; popEl=el;
+  document.querySelectorAll("#sentBox .chip.hi").forEach(c=>c.classList.remove("hi")); el.classList.add("hi");
+  position(el);
+}
+function position(el){
+  const pop=document.getElementById("pop");
+  if(window.innerWidth<=600){ pop.style.left="8px"; pop.style.top="auto"; return; }
+  const r=el.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight;
+  let left=Math.max(8, Math.min(r.left, window.innerWidth-pw-8));
+  let top=r.bottom+8; if(top+ph>window.innerHeight-8) top=Math.max(8, r.top-ph-8);
+  pop.style.left=left+"px"; pop.style.top=top+"px";
+}
+function hidePop(){ document.getElementById("pop").classList.remove("show"); document.querySelectorAll("#sentBox .chip.hi").forEach(c=>c.classList.remove("hi")); }
+document.getElementById("pop").addEventListener("click", e=>e.stopPropagation());
+document.addEventListener("click", e=>{ if(!e.target.closest("#pop") && !e.target.closest(".chip")) hidePop(); });
+window.addEventListener("scroll", ()=>{ if(popEl && document.getElementById("pop").classList.contains("show")) position(popEl); }, {passive:true});
+window.addEventListener("resize", ()=>{ if(popEl) position(popEl); });
+
+/* mode switch */
+document.querySelectorAll("#modeSeg button").forEach(b=>b.addEventListener("click",()=>{
+  mode=b.dataset.m; document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  hidePop(); const h=document.getElementById("hint"); if(h) h.textContent = mode==="off" ? "Click a word to choose it. Turn on Word help above if you want to check a word first." : "Click any word for help. When a step is active, the popover also lets you choose that word as your answer.";
+}));
+
+/* sanity: every token has a lexicon entry (log only) */
+(function(){ const missing=new Set(); SENT.forEach(s=>s.lines.forEach(([n,t])=>t.split(/\s+/).filter(Boolean).forEach(w=>{ if(!lex(s.id,w)) missing.add(w); }))); if(missing.size) console.warn("Missing LEX:", [...missing]); })();
+
+function setHH(){ document.documentElement.style.setProperty("--hh", document.querySelector("header").offsetHeight+"px"); }
+setHH(); window.addEventListener("resize", setHH);
+renderIndex();
+</script>
+</body>
+</html>
